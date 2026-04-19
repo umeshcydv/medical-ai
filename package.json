@@ -1,0 +1,19 @@
+{
+  "name": "medical-ai",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "backend",
+    "packages/*"
+  ],
+  "scripts": {
+    "backend": "npm run dev -w backend",
+    "patient": "npm run start -w patient",
+    "doctor": "npm run start -w doctor",
+    "shared:build": "npm run build -w @medical-ai/shared"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

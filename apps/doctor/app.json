@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Doctor",
+    "slug": "medical-ai-doctor",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "medicalai-doctor",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.medicalai.doctor",
+      "versionCode": 1,
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.medicalai.doctor",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "To record consultations with the patient."
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Doctor to record consultations."
+        }
+      ]
+    ],
+    "extra": {
+      "apiBaseUrl": "http://10.0.2.2:4000",
+      "supabaseUrl": "https://cwpvzgqetclblxxsqnue.supabase.co",
+      "supabaseAnonKey": "sb_publishable_8ta-gjnrefVhv7sOkOa96g_u4ELCubN"
+    }
+  }
+}

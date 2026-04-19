@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Patient",
+    "slug": "medical-ai-patient",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "medicalai-patient",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.medicalai.patient",
+      "versionCode": 1
+    },
+    "ios": {
+      "bundleIdentifier": "com.medicalai.patient",
+      "supportsTablet": false
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "extra": {
+      "apiBaseUrl": "http://10.0.2.2:4000",
+      "supabaseUrl": "https://cwpvzgqetclblxxsqnue.supabase.co",
+      "supabaseAnonKey": "sb_publishable_8ta-gjnrefVhv7sOkOa96g_u4ELCubN"
+    }
+  }
+}
