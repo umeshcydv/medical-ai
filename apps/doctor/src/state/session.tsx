@@ -5,8 +5,9 @@ import type { User } from '@medical-ai/shared';
 
 interface SessionState {
   loading: boolean;
-  authed: boolean;
+  hasAuthSession: boolean;
   user: User | null;
+  needsProfile: boolean;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -15,11 +16,15 @@ const SessionContext = createContext<SessionState | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
+  const [hasAuthSession, setHasAuthSession] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
   const refresh = async () => {
     const { data } = await supabase.auth.getSession();
-    if (!data.session) {
+    const has = !!data.session;
+    setHasAuthSession(has);
+
+    if (!has) {
       setUser(null);
       setLoading(false);
       return;
@@ -41,11 +46,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setHasAuthSession(false);
     setUser(null);
   };
 
+  const needsProfile = hasAuthSession && !user;
+
   return (
-    <SessionContext.Provider value={{ loading, authed: !!user, user, refresh, signOut }}>
+    <SessionContext.Provider
+      value={{ loading, hasAuthSession, user, needsProfile, refresh, signOut }}
+    >
       {children}
     </SessionContext.Provider>
   );

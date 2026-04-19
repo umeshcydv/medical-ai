@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Alert, ScrollView } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { Field } from '../../src/components/Field';
 import { Button } from '../../src/components/Button';
-import { supabase } from '../../src/lib/supabase';
 import { apiPost } from '../../src/lib/api';
+import { DEFAULT_DEV_OTP, DEV_OTP_BYPASS, normalizePhone, sendOtp, verifyOtp } from '../../src/lib/auth';
+import { useSession } from '../../src/state/session';
 import { colors, spacing } from '../../src/lib/theme';
 import type { Gender, MaritalStatus } from '@medical-ai/shared';
 
@@ -13,10 +14,17 @@ type Step = 'otp' | 'profile';
 
 export default function SignUp() {
   const router = useRouter();
+  const { hasAuthSession } = useSession();
   const [step, setStep] = useState<Step>('otp');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+91 ');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+
+  // If user already has a session (e.g. arrived here via the gate after
+  // signInAnonymously), skip straight to the profile form.
+  useEffect(() => {
+    if (hasAuthSession) setStep('profile');
+  }, [hasAuthSession]);
 
   // profile fields
   const [fullName, setFullName] = useState('');
@@ -27,19 +35,20 @@ export default function SignUp() {
 
   const [loading, setLoading] = useState(false);
 
-  const sendOtp = async () => {
+  const onSend = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone });
+    const r = await sendOtp(phone);
     setLoading(false);
-    if (error) return Alert.alert('Error', error.message);
+    if (!r.ok) return Alert.alert('Error', r.error || 'Failed to send OTP');
     setOtpSent(true);
+    if (DEV_OTP_BYPASS) setOtp(DEFAULT_DEV_OTP);
   };
 
-  const verifyOtp = async () => {
+  const onVerify = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({ phone, token: otp, type: 'sms' });
+    const r = await verifyOtp(phone, otp);
     setLoading(false);
-    if (error) return Alert.alert('Error', error.message);
+    if (!r.ok) return Alert.alert('Verification failed', r.error || 'Unknown error');
     setStep('profile');
   };
 
@@ -52,7 +61,7 @@ export default function SignUp() {
       await apiPost('/users/profile', {
         role: 'patient',
         full_name: fullName,
-        phone,
+        phone: normalizePhone(phone),
         gender,
         age: parseInt(age, 10),
         marital_status: marital,
@@ -75,7 +84,7 @@ export default function SignUp() {
             <Text style={styles.subtitle}>Verify your phone</Text>
             <Field
               label="Phone number"
-              placeholder="+1 555 000 0000"
+              placeholder="+91 98765 43210"
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
@@ -83,17 +92,23 @@ export default function SignUp() {
             />
             {otpSent && (
               <Field
-                label="OTP code"
+                label={DEV_OTP_BYPASS ? `OTP code (dev: ${DEFAULT_DEV_OTP})` : 'OTP code'}
                 placeholder="123456"
                 value={otp}
                 onChangeText={setOtp}
                 keyboardType="number-pad"
+                maxLength={6}
               />
             )}
             {otpSent ? (
-              <Button title="Verify" onPress={verifyOtp} loading={loading} />
+              <Button title="Verify" onPress={onVerify} loading={loading} />
             ) : (
-              <Button title="Send OTP" onPress={sendOtp} loading={loading} />
+              <Button title="Send OTP" onPress={onSend} loading={loading} />
+            )}
+            {DEV_OTP_BYPASS && (
+              <Text style={styles.devHint}>
+                Dev mode: any phone works, OTP is always {DEFAULT_DEV_OTP}
+              </Text>
             )}
           </>
         )}
@@ -182,6 +197,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: spacing.xs },
   subtitle: { color: colors.muted, marginBottom: spacing.lg },
   link: { color: colors.primary, textAlign: 'center', fontWeight: '600' },
+  devHint: { color: colors.muted, fontSize: 12, marginTop: spacing.sm, textAlign: 'center' },
   chip: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,

@@ -7,16 +7,23 @@ import { ActivityIndicator, View } from 'react-native';
 import { colors } from '../src/lib/theme';
 
 function Gate() {
-  const { loading, authed } = useSession();
+  const { loading, hasAuthSession, user, needsProfile } = useSession();
   const segments = useSegments();
   const router = useRouter();
 
   React.useEffect(() => {
     if (loading) return;
     const inAuth = segments[0] === '(auth)';
-    if (!authed && !inAuth) router.replace('/(auth)/sign-in');
-    if (authed && inAuth) router.replace('/(app)/patients');
-  }, [loading, authed, segments]);
+    const onSignUp = inAuth && segments[1] === 'sign-up';
+
+    if (!hasAuthSession && !inAuth) {
+      router.replace('/(auth)/sign-in');
+    } else if (needsProfile && !onSignUp) {
+      router.replace('/(auth)/sign-up');
+    } else if (hasAuthSession && user && inAuth) {
+      router.replace('/(app)/patients');
+    }
+  }, [loading, hasAuthSession, user, needsProfile, segments]);
 
   if (loading) {
     return (

@@ -4,20 +4,29 @@ import { Link } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { Field } from '../../src/components/Field';
 import { Button } from '../../src/components/Button';
-import { supabase } from '../../src/lib/supabase';
+import { DEFAULT_DEV_OTP, DEV_OTP_BYPASS, sendOtp, verifyOtp } from '../../src/lib/auth';
 import { colors, spacing } from '../../src/lib/theme';
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('+91 ');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const submit = async () => {
-    if (!email || !password) return;
+  const onSend = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const r = await sendOtp(phone);
     setLoading(false);
-    if (error) return Alert.alert('Sign-in failed', error.message);
+    if (!r.ok) return Alert.alert('Error', r.error || 'Failed to send OTP');
+    setOtpSent(true);
+    if (DEV_OTP_BYPASS) setOtp(DEFAULT_DEV_OTP);
+  };
+
+  const onVerify = async () => {
+    setLoading(true);
+    const r = await verifyOtp(phone, otp);
+    setLoading(false);
+    if (!r.ok) return Alert.alert('Sign-in failed', r.error || 'Unknown error');
   };
 
   return (
@@ -25,21 +34,40 @@ export default function SignIn() {
       <View style={{ flex: 1, justifyContent: 'center' }}>
         <Text style={styles.title}>Doctor sign in</Text>
         <Text style={styles.subtitle}>Access your patient queue</Text>
+
         <Field
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
+          label="Phone number"
+          placeholder="+91 98765 43210"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          autoComplete="tel"
+          editable={!otpSent}
         />
-        <Field
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        <Button title="Sign in" onPress={submit} loading={loading} />
+
+        {otpSent && (
+          <Field
+            label={DEV_OTP_BYPASS ? `OTP code (dev: ${DEFAULT_DEV_OTP})` : 'OTP code'}
+            placeholder="123456"
+            value={otp}
+            onChangeText={setOtp}
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+        )}
+
+        {otpSent ? (
+          <Button title="Verify" onPress={onVerify} loading={loading} />
+        ) : (
+          <Button title="Send OTP" onPress={onSend} loading={loading} />
+        )}
+
+        {DEV_OTP_BYPASS && (
+          <Text style={styles.devHint}>
+            Dev mode: any phone works, OTP is always {DEFAULT_DEV_OTP}
+          </Text>
+        )}
+
         <View style={{ marginTop: spacing.lg }}>
           <Link href="/(auth)/sign-up" style={styles.link}>
             First time? Create a doctor account
@@ -54,4 +82,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: spacing.xs },
   subtitle: { color: colors.muted, marginBottom: spacing.xl },
   link: { color: colors.primary, textAlign: 'center', fontWeight: '600' },
+  devHint: { color: colors.muted, fontSize: 12, marginTop: spacing.sm, textAlign: 'center' },
 });

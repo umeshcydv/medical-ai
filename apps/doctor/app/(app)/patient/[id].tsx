@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiGet } from '../../../src/lib/api';
+import { apiGet, apiPost } from '../../../src/lib/api';
 import { colors, radius, spacing } from '../../../src/lib/theme';
 import type { User, VisitSession, Appointment } from '@medical-ai/shared';
 
@@ -71,7 +71,6 @@ export default function PatientThread() {
               <Pressable
                 style={styles.nextCard}
                 onPress={async () => {
-                  const { apiPost } = await import('../../../src/lib/api');
                   const res = await apiPost<{ visit: { id: string } }>('/visits/start', { appointment_id: nextAppt.id });
                   router.push(`/(app)/visit/${res.visit.id}`);
                 }}
